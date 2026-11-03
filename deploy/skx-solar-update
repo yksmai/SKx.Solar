@@ -1,0 +1,29 @@
+#!/bin/sh
+# Spielt ein neues Paket ein. Startet über skx-solar-update.path, sobald im Feed-Ordner ein neues Archiv liegt.
+# Aufruf: skx-solar-update /pfad/zum/archiv.tgz
+set -eu
+
+archive="$1"
+[ -f "$archive" ] || { echo "Kein Paket unter $archive." >&2; exit 1; }
+
+work="$(mktemp -d)"
+trap 'rm -rf "$work"' EXIT
+tar xzf "$archive" --no-same-owner --no-same-permissions -C "$work"
+[ -f "$work/app/SKx.Solar" ] || { echo "Das Archiv enthält keine App." >&2; exit 1; }
+
+# Ein schon eingespieltes Paket nicht erneut einspielen, etwa nach einem Neustart.
+if cmp -s "$work/app/SKx.Solar.dll" /opt/skx-solar/SKx.Solar.dll && [ -z "$(diff -rq "$work/app" /opt/skx-solar 2>/dev/null | grep -v 'Only in /opt\|appsettings.json')" ]; then
+    echo "Bereits aktuell."
+    exit 0
+fi
+
+systemctl stop skx-solar
+# Die Einstellungen des Pi bleiben bestehen.
+rm -f "$work/app/appsettings.json"
+chown -R root:root "$work/app"
+find "$work/app" -type d -exec chmod 755 {} +
+find "$work/app" -type f -exec chmod 644 {} +
+cp -r "$work"/app/. /opt/skx-solar/
+chmod 755 /opt/skx-solar/SKx.Solar
+systemctl start skx-solar
+echo "Update eingespielt."

@@ -1,0 +1,4 @@
+# Skripte laufen auf dem Pi und im Container, Windows-Zeilenenden würden sie brechen.
+* text=auto eol=lf
+*.cmd text eol=crlf
+*.png binary

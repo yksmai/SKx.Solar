@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="SKx.Solar/SKx.Solar.csproj" />
+  <Project Path="SKx.Solar.Tests/SKx.Solar.Tests.csproj" />
+</Solution>

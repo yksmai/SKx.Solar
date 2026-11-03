@@ -1,0 +1,30 @@
+[Unit]
+Description=SKx Solar - Deye Datensammler und Dashboard
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=notify
+User=skx-solar
+Group=skx-solar
+WorkingDirectory=/opt/skx-solar
+ExecStart=/opt/skx-solar/SKx.Solar
+Environment=DOTNET_ENVIRONMENT=Production
+Environment=DOTNET_GCgen0size=2000000
+Environment=DOTNET_GCConserveMemory=5
+Environment=Solar__DatabasePath=/var/lib/skx-solar/solar.db
+WatchdogSec=120
+Restart=always
+RestartSec=10
+MemoryHigh=300M
+MemoryMax=400M
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/var/lib/skx-solar
+# Optionales Sicherungsziel auf dem NAS, das Minus erlaubt einen fehlenden Mount.
+ReadWritePaths=-/mnt/skx-solar-backup
+
+[Install]
+WantedBy=multi-user.target

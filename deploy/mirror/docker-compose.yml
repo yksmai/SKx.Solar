@@ -1,0 +1,33 @@
+# Spiegel auf dem Server. Das Token steht in .env, Caddy erreicht den Dienst über sein Docker-Netz.
+name: solar
+
+services:
+  solar:
+    build: .
+    image: skx-solar-mirror:latest
+    container_name: solar
+    restart: always
+    environment:
+      TZ: ${TZ:-Europe/Berlin}
+      Solar__Mirror__Enabled: "true"
+      Solar__Mirror__Token: ${SOLAR_MIRROR_TOKEN:?}
+      Solar__DatabasePath: /data/solar.db
+    volumes:
+      - solar-data:/data
+    mem_limit: 300m
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
+    networks:
+      - proxy
+
+volumes:
+  solar-data:
+
+networks:
+  proxy:
+    external: true
+    # Das Docker-Netz, in dem der Reverse Proxy läuft. Über .env anpassbar.
+    name: ${SOLAR_PROXY_NETWORK:-app_default}

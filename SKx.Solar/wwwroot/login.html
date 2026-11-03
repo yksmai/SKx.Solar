@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark light">
+  <meta name="theme-color" content="#000000">
+  <title>SKx Solar</title>
+  <link rel="stylesheet" href="app.css">
+  <style>
+    body { display: grid; place-items: center; padding: 16px; }
+    form { width: min(360px, 100%); display: grid; gap: 14px; }
+    label { display: grid; gap: 6px; color: var(--text-2); font-size: 13px; }
+    input { height: 40px; padding: 0 12px; border-radius: 9px; border: 1px solid var(--line-strong); background: var(--surface-2); color: var(--text); font: inherit; }
+    #error { color: var(--danger); font-size: 13px; min-height: 20px; }
+    form.shake { animation: shake .4s; }
+    @keyframes shake { 25% { transform: translateX(-6px); } 50% { transform: translateX(5px); } 75% { transform: translateX(-3px); } }
+  </style>
+</head>
+<body>
+  <form id="form" class="card">
+    <h1 style="font:600 20px var(--font-display)">SKx Solar</h1>
+    <p id="hint" class="stat-note" hidden>Willkommen. Lege jetzt das Adminkonto für dieses Dashboard fest.</p>
+    <label>Benutzername <input id="username" autocomplete="username" autocapitalize="none" spellcheck="false" maxlength="32" required autofocus></label>
+    <label id="password-label">Passwort <input id="password" type="password" autocomplete="current-password" required></label>
+    <label id="confirm-row" hidden>Passwort wiederholen <input id="confirm" type="password" autocomplete="new-password"></label>
+    <div id="error" role="alert"></div>
+    <button class="btn btn-primary" id="submit" type="submit">Anmelden</button>
+  </form>
+  <script src="login.js"></script>
+</body>
+</html>

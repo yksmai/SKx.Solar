@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="dark light">
+  <meta name="theme-color" content="#000000">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <title>SKx Solar</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><circle cx='12' cy='12' r='7' fill='%23eb6834'/></svg>">
+  <script>
+    // Vor dem ersten Zeichnen setzen, damit das Design beim Laden nicht umspringt.
+    try { const t = localStorage.getItem("skx-solar-theme"); if (t) document.documentElement.dataset.theme = t; } catch {}
+  </script>
+  <link rel="stylesheet" href="app.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="brand" href="#top" aria-label="SKx Solar, zum Seitenanfang">
+        <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true">
+          <g class="brand-rays"><path d="M16 2v4M16 26v4M2 16h4M26 16h4M6.1 6.1l2.8 2.8M23.1 23.1l2.8 2.8M6.1 25.9l2.8-2.8M23.1 8.9l2.8-2.8"/></g>
+          <circle cx="16" cy="16" r="6"/>
+        </svg>
+        <span class="brand-name">SKx Solar</span>
+        <span id="device" class="brand-device"></span>
+      </a>
+      <div class="topbar-right">
+        <span id="source" class="source" hidden></span>
+        <div id="status" class="status" role="status" data-kind="wait">
+          <span class="status-ring" aria-hidden="true">
+            <svg viewBox="0 0 20 20"><circle class="track" cx="10" cy="10" r="8"/><circle class="progress" id="status-progress" cx="10" cy="10" r="8" pathLength="100"/></svg>
+            <i></i>
+          </span>
+          <span id="status-label">Verbinde</span>
+          <span id="status-time" class="status-time" hidden>vor <span id="status-age" class="roll"></span> s</span>
+          <span class="status-next" id="status-next-wrap"><span>· nächste in <span id="status-next">–</span> s</span></span>
+        </div>
+        <button id="theme" class="icon-btn" type="button" aria-label="Design umschalten" title="Design umschalten">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <g class="theme-sun"><circle cx="12" cy="12" r="4"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6L7 7M17 17l1.4 1.4M5.6 18.4L7 17M17 7l1.4-1.4"/></g>
+            <path class="theme-moon" d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5Z"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </header>
+  <nav class="pagenav" aria-label="Bereiche">
+    <div class="pagenav-inner" id="pagenav">
+      <button type="button" data-page-link="overview" aria-current="page">Übersicht</button>
+      <button type="button" data-page-link="analysis">Analyse</button>
+      <button type="button" data-page-link="planning">Planung</button>
+      <button type="button" data-page-link="alerts">Meldungen <span id="alert-count" class="count" hidden></span></button>
+      <button type="button" data-page-link="system">System</button>
+    </div>
+  </nav>
+
+  <main id="top">
+    <div id="source-notice" class="notice" role="status" hidden>Der Pi ist nicht erreichbar. Live-Werte kommen direkt vom Wechselrichter, der Verlauf zeigt nur, was dieser PC selbst aufgezeichnet hat.</div>
+    <div id="alert" class="alert" role="alert" hidden>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4 2.5 20h19L12 4Zm0 6v5m0 2.5v.5"/></svg>
+      <span id="alert-text"></span>
+    </div>
+
+    <div class="page" data-page="overview">
+    <section class="hero card reveal" aria-labelledby="hero-title">
+      <div class="hero-flow" id="flow-host">
+        <svg id="flow" role="img" aria-label="Energiefluss zwischen PV, Batterie, Haus und Netz"></svg>
+      </div>
+      <div class="hero-side">
+        <h1 id="hero-title" class="eyebrow">Gerade jetzt</h1>
+        <div id="now-source"></div>
+        <div id="now-generation"></div>
+        <div class="gauges">
+          <div class="gauge" id="gauge-autarky">
+            <svg viewBox="0 0 64 64" aria-hidden="true"><circle class="gauge-track" cx="32" cy="32" r="27"/><circle class="gauge-value" cx="32" cy="32" r="27" pathLength="100"/></svg>
+            <div><strong data-value>–</strong><span>Autarkie heute</span></div>
+          </div>
+          <div class="gauge" id="gauge-self">
+            <svg viewBox="0 0 64 64" aria-hidden="true"><circle class="gauge-track" cx="32" cy="32" r="27"/><circle class="gauge-value" cx="32" cy="32" r="27" pathLength="100"/></svg>
+            <div><strong data-value>–</strong><span>Eigenverbrauch heute</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="kpis" aria-label="Energie heute">
+      <article class="card kpi reveal" data-series="pv">
+        <header><i class="kpi-dot"></i><span>Erzeugung</span></header>
+        <strong id="k-pv" class="kpi-value">–</strong>
+        <p id="k-pv-sub" class="kpi-sub">&nbsp;</p>
+        <div class="sparkline" id="s-pv" aria-hidden="true"></div>
+      </article>
+      <article class="card kpi reveal" data-series="load">
+        <header><i class="kpi-dot"></i><span>Verbrauch</span></header>
+        <strong id="k-load" class="kpi-value">–</strong>
+        <p id="k-load-sub" class="kpi-sub">&nbsp;</p>
+        <div class="sparkline" id="s-load" aria-hidden="true"></div>
+      </article>
+      <article class="card kpi reveal" data-series="grid">
+        <header><i class="kpi-dot"></i><span>Netzbezug</span></header>
+        <strong id="k-import" class="kpi-value">–</strong>
+        <p id="k-import-sub" class="kpi-sub">&nbsp;</p>
+        <div class="sparkline" id="s-import" aria-hidden="true"></div>
+      </article>
+      <article class="card kpi reveal" data-series="battery">
+        <header><i class="kpi-dot"></i><span>Einspeisung</span></header>
+        <strong id="k-export" class="kpi-value">–</strong>
+        <p id="k-export-sub" class="kpi-sub">&nbsp;</p>
+        <div class="sparkline" id="s-export" aria-hidden="true"></div>
+      </article>
+      <article class="card kpi reveal" id="k-savings-card" hidden>
+        <header><span>Ersparnis</span></header>
+        <strong id="k-savings" class="kpi-value">–</strong>
+        <p class="kpi-sub">nach deinen Tarifen</p>
+      </article>
+    </section>
+
+    <section class="card range reveal" aria-labelledby="range-title">
+      <div class="range-head">
+        <div>
+          <h2 id="range-title">Verlauf</h2>
+          <p id="range-summary" class="muted range-summary">&nbsp;</p>
+        </div>
+        <div class="range-controls">
+          <div class="segmented" id="views" role="group" aria-label="Zeitraum">
+            <i class="segmented-thumb" aria-hidden="true"></i>
+            <button type="button" data-view="day" aria-pressed="true">Tag</button>
+            <button type="button" data-view="month" aria-pressed="false">Monat</button>
+            <button type="button" data-view="year" aria-pressed="false">Jahr</button>
+          </div>
+          <div class="stepper">
+            <button id="prev" class="icon-btn" type="button" aria-label="Zurück"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5-7 7 7 7"/></svg></button>
+            <span id="range-label" class="range-label" aria-live="polite"></span>
+            <button id="next" class="icon-btn" type="button" aria-label="Weiter"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg></button>
+          </div>
+          <button id="today" class="btn" type="button" hidden>Heute</button>
+          <button id="table-toggle" class="btn" type="button" aria-pressed="false">Tabelle</button>
+        </div>
+      </div>
+      <div id="legend" class="legend"></div>
+      <div id="range-body" class="range-body">
+        <div id="chart" class="chart"></div>
+        <div id="soc-wrap" class="soc-wrap">
+          <h3>Batterieladestand</h3>
+          <div id="chart-soc" class="chart chart-small"></div>
+        </div>
+      </div>
+      <div class="collapse" id="table-collapse"><div><div id="table-wrap" class="table-wrap"></div></div></div>
+    </section>
+
+    <section class="split">
+      <article class="card reveal" aria-labelledby="balance-title">
+        <h2 id="balance-title">Bilanz heute</h2>
+        <div class="balance" id="balance-source"></div>
+        <div class="balance" id="balance-generation" hidden></div>
+        <div class="balance" id="balance-use"></div>
+      </article>
+      <article class="card reveal" aria-labelledby="system-title">
+        <div class="card-head">
+          <h2 id="system-title">Anlage</h2>
+          <div class="tabs" id="system-tabs" role="tablist" aria-label="Anlagenbereiche">
+            <button type="button" role="tab" data-tab="pv" aria-selected="true">PV</button>
+            <button type="button" role="tab" data-tab="battery" aria-selected="false">Batterie</button>
+            <button type="button" role="tab" data-tab="grid" aria-selected="false">Netz</button>
+            <button type="button" role="tab" data-tab="device" aria-selected="false">Gerät</button>
+          </div>
+        </div>
+        <div id="system-panel" class="system-panel" role="tabpanel"></div>
+      </article>
+    </section>
+
+    </div>
+
+    <div class="page" data-page="analysis" hidden>
+    <div id="analysis-content" class="page"></div>
+    <section class="card" aria-labelledby="calendar-title">
+      <div class="card-head">
+        <div>
+          <h2 id="calendar-title">Ertragskalender <span id="calendar-year" class="muted"></span></h2>
+          <p class="muted range-summary">Tageserzeugung, ein Klick öffnet den Tag</p>
+        </div>
+        <div class="calendar-scale" aria-hidden="true"><span>wenig</span><i></i><i></i><i></i><i></i><i></i><span>viel</span></div>
+      </div>
+      <div id="calendar" class="calendar"></div>
+    </section>
+
+    </div>
+
+    <div class="page" data-page="planning" hidden><div id="planning-content" class="page"></div><div id="planning-settings"></div></div>
+    <div class="page" data-page="alerts" hidden><div id="alerts-content" class="page"></div></div>
+
+    <div class="page" data-page="system" hidden>
+    <div id="system-content" class="page"></div>
+    <div id="system-password"></div>
+    <div id="system-users"></div>
+    <section class="card data-card" aria-labelledby="data-title">
+      <div>
+        <h2 id="data-title">Daten für Analysen</h2>
+        <p class="muted">Den Snapshot in SKx als SQLite-Verbindung einbinden. Vorbereitet sind die Views <code>v_SolarMinute</code>, <code>v_SolarDaily</code> und <code>v_SolarMonthly</code>.</p>
+      </div>
+      <div class="actions">
+        <a class="btn" data-download href="api/export/days.csv">Tageswerte (CSV)</a>
+        <a class="btn" data-download id="export-minutes" href="api/export/minutes.csv">Minuten des Tages (CSV)</a>
+        <a class="btn btn-primary admin-only" data-download href="api/export/snapshot.db">Datenbank-Snapshot</a>
+      </div>
+    </section>
+    </div>
+  </main>
+
+  <div id="tooltip" class="tooltip" role="presentation"></div>
+  <div id="toasts" class="toasts" aria-live="polite"></div>
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
