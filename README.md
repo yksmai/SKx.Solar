@@ -14,9 +14,77 @@ Sammelt die Daten eines Deye-Hybrid-Wechselrichters über den Datenlogger (Solar
 
 Ohne Einstellung bleibt jede Erweiterung aus, und es verlässt nichts das Heimnetz.
 
-## Installation auf dem Raspberry Pi
+## Installation
 
-Der Pi braucht ein aktuelles Raspberry Pi OS Lite, gern 64 Bit (`uname -m` zeigt `aarch64`). .NET muss nicht installiert sein.
+### Was du brauchst
+
+- Einen **Deye-Hybrid-Wechselrichter** (dreiphasig) mit WLAN-Datenlogger. Der Logger muss im Heimnetz hängen, die Solarman-App darf weiterlaufen.
+- Einen **Raspberry Pi** 3, 4, 5 oder Zero 2 W mit Netzteil und einer microSD-Karte ab 16 GB. Ein Pi 1 oder der erste Zero reichen nicht.
+- Einen PC, um die SD-Karte zu beschreiben. Programmierkenntnisse und ein .NET SDK sind nicht nötig.
+
+### 1. Pi einrichten
+
+1. Den [Raspberry Pi Imager](https://www.raspberrypi.com/software/) installieren und starten.
+2. Als System **Raspberry Pi OS Lite (64-bit)** wählen, die SD-Karte als Ziel.
+3. In den Einstellungen des Imagers einen Hostnamen (etwa `solar`), Benutzername und Passwort, das WLAN und **SSH aktivieren** festlegen. Ein Netzwerkkabel ist zuverlässiger als WLAN.
+4. Schreiben, Karte in den Pi stecken, einschalten und zwei Minuten warten.
+
+### 2. Logger-Adresse festhalten
+
+In der Geräteliste deines Routers den Datenlogger des Wechselrichters suchen und ihm eine **feste IP-Adresse** geben (in der FRITZ!Box: Heimnetz → Netzwerk → Gerät bearbeiten → „Immer die gleiche IPv4-Adresse zuweisen“). Diese Adresse brauchst du in Schritt 4. Gib dem Pi am besten gleich auch eine feste Adresse.
+
+### 3. SKx Solar installieren
+
+Auf dem PC ein Terminal öffnen (Windows: PowerShell) und dich mit dem Pi verbinden. `solar` und `pi` durch deinen Hostnamen und Benutzernamen ersetzen:
+
+```bash
+ssh pi@solar.local
+```
+
+Klappt `solar.local` nicht, nimm die IP des Pi aus dem Router. Auf dem Pi dann diesen einen Befehl ausführen:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/yksmai/SKx.Solar/main/deploy/get.sh | sudo sh
+```
+
+Das Skript lädt das passende fertige Paket, legt einen eigenen Systembenutzer an, richtet den Dienst ein und startet ihn. Am Ende zeigt es die Adresse des Dashboards an.
+
+### 4. Im Dashboard einrichten
+
+1. Im Browser `http://solar.local:8080` (oder `http://<ip-des-pi>:8080`) öffnen.
+2. Das **Adminkonto** anlegen: Benutzername und Passwort frei wählen.
+3. Unter **Planung → Einstellungen → Wechselrichter** die Logger-Adresse aus Schritt 2 eintragen und speichern. Die Seriennummer kann leer bleiben, dann sucht die App den Logger selbst.
+
+Nach wenigen Sekunden erscheinen die ersten Werte in der Übersicht. Alles Weitere wie Batteriekapazität, Tarife, Prognose oder Meldungen aufs Handy ist optional und steht unter [Einstellungen](#einstellungen).
+
+### Update und Deinstallation
+
+Für ein Update denselben `curl`-Befehl erneut ausführen. Einstellungen, Konten und Daten bleiben erhalten.
+
+Zum Entfernen:
+
+```bash
+sudo systemctl disable --now skx-solar skx-solar-update.path
+sudo rm -rf /opt/skx-solar /etc/systemd/system/skx-solar*.service /etc/systemd/system/skx-solar-update.path /usr/local/sbin/skx-solar-update
+sudo systemctl daemon-reload
+```
+
+Die Daten unter `/var/lib/skx-solar` bleiben dabei liegen. Wer sie auch löschen will: `sudo rm -rf /var/lib/skx-solar`.
+
+### Läuft nichts?
+
+```bash
+systemctl status skx-solar
+journalctl -u skx-solar -f
+```
+
+- **„Der Wechselrichter ist noch nicht eingerichtet“:** Schritt 4.3 fehlt.
+- **Keine Werte trotz Adresse:** Logger und Pi müssen im selben Netz sein, und der Logger muss auf Port 8899 antworten. Manche Router isolieren WLAN-Geräte voneinander (Gastnetz, „Client Isolation“).
+- **Warnung zum Gerätetyp im Log:** Die Registerbelegung ist nur an dreiphasigen Hochvolt-Hybriden geprüft, siehe [Grenzen](#grenzen).
+
+## Selbst bauen
+
+Statt des fertigen Pakets lässt sich alles aus dem Quellcode bauen. Dafür braucht der PC das .NET 10 SDK und PowerShell.
 
 Auf dem PC bauen (für 32 Bit `-Runtime linux-arm`):
 
@@ -31,22 +99,13 @@ scp -r artifacts/skx-solar-linux-arm64 pi@<ip-des-pi>:~/skx-solar
 ssh pi@<ip-des-pi> "cd ~/skx-solar && sudo sh install.sh"
 ```
 
-Das Dashboard läuft danach unter `http://<ip-des-pi>:8080`. Beim ersten Aufruf legst du das Adminkonto an, danach unter **Planung → Einstellungen → Wechselrichter** die Adresse des Loggers eintragen. Die Seriennummer kann leer bleiben, dann sucht die App den Logger selbst. Ein Update funktioniert genauso und behält die Einstellungen in `/opt/skx-solar/appsettings.json`. Die Daten liegen in `/var/lib/skx-solar/solar.db`.
-
-```bash
-systemctl status skx-solar
-journalctl -u skx-solar -f
-```
+Weiter geht es mit [Schritt 4](#4-im-dashboard-einrichten). Ein Update funktioniert genauso und behält die Einstellungen in `/opt/skx-solar/appsettings.json`. Die Daten liegen in `/var/lib/skx-solar/solar.db`.
 
 ## Auf dem PC mit direktem Ersatzweg
 
 Die App läuft auch auf dem PC und zeigt dort die Daten des Pi. Antwortet er nicht oder hat selbst keine aktuellen Werte, liest sie nach spätestens rund 20 Sekunden direkt vom Wechselrichter und schaltet zurück, sobald der Pi wieder da ist.
 
-```powershell
-./deploy/publish.ps1 -Runtime win-x64
-```
-
-In `artifacts/skx-solar-win-x64/app/appsettings.json` die Adresse des Pi eintragen und `start-windows.cmd` starten:
+`skx-solar-win-x64.zip` unter [Releases](https://github.com/yksmai/SKx.Solar/releases/latest) laden und entpacken, oder selbst bauen mit `./deploy/publish.ps1 -Runtime win-x64`. In der `appsettings.json` des Ordners die Adresse des Pi eintragen und `start-windows.cmd` starten:
 
 ```json
 "Upstream": { "Url": "http://<ip-des-pi>:8080" }
@@ -207,6 +266,8 @@ CSV-Exporte (`/api/export/days.csv`, `/api/export/minutes.csv`, Parameter `from`
 dotnet test SKx.Solar.slnx
 dotnet run --project SKx.Solar -- --Urls=http://localhost:5188
 ```
+
+Ein Tag `v*` (etwa `git tag v1.0.0 && git push origin v1.0.0`) startet `.github/workflows/release.yml`. Der Workflow testet, baut die Pakete für Pi und PC und hängt sie an ein Release, von dem `deploy/get.sh` lädt.
 
 ## Lizenz
 
