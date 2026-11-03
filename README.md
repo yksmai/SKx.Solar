@@ -2,6 +2,18 @@
 
 Sammelt die Daten eines Deye-Hybrid-Wechselrichters über den Datenlogger (Solarman V5, TCP 8899), speichert sie in SQLite und zeigt sie als Web-Dashboard. Läuft ohne Cloud und ohne App. Der Client beherrscht nur Modbus-Funktion 03 (lesen), am Wechselrichter lässt sich damit nichts verstellen.
 
+<picture>
+  <source media="(prefers-color-scheme: light)" srcset="docs/overview-light.png">
+  <img alt="Übersicht mit Energiefluss zwischen PV, Batterie, Haus und Netz, Tageswerten und Verlauf" src="docs/overview-dark.png">
+</picture>
+
+<details>
+<summary>Weitere Ansicht: Analyse</summary>
+
+![Analyse mit Batteriewerten, Ladestand-Verteilung, Jahresvergleich, besten Tagen und Strings](docs/analysis.png)
+
+</details>
+
 ## Funktionen
 
 | Bereich | Inhalt | Braucht |
