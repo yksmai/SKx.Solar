@@ -207,3 +207,7 @@ CSV-Exporte (`/api/export/days.csv`, `/api/export/minutes.csv`, Parameter `from`
 dotnet test SKx.Solar.slnx
 dotnet run --project SKx.Solar -- --Urls=http://localhost:5188
 ```
+
+## Lizenz
+
+MIT, siehe [LICENSE](LICENSE).
